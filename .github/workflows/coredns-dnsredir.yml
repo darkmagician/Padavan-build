@@ -15,7 +15,13 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: ^1.13
-
+      - name: Clone source code
+        run: |
+          DNSREDIR_DIR=/opt/dnsredir
+          REPO_ADDR=https://github.com/leiless/dnsredir.git
+          DNSREDIR_TAG=$(curl -sL https://api.github.com/repos/leiless/dnsredir/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
+          git clone --branch $DNSREDIR_TAG --depth 1 $REPO_ADDR $DNSREDIR_DIR 2> /dev/null
+          cd $DNSREDIR_DIR
       - name: Get dependencies
         run: |
           go get -v -t -d ./...
@@ -31,10 +37,9 @@ jobs:
           nproc
           uname -v
 
-          DNSREDIR_DIR=dnsredir
+          DNSREDIR_DIR=$PWD
           REPO_ADDR=https://github.com/leiless/dnsredir.git
           DNSREDIR_TAG=$(curl -sL https://api.github.com/repos/leiless/dnsredir/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
-          git clone --branch $DNSREDIR_TAG --depth 1 $REPO_ADDR $DNSREDIR_DIR 2> /dev/null
 
           COREDNS_URL=https://github.com/coredns/coredns.git
           COREDNS_DIR=coredns
