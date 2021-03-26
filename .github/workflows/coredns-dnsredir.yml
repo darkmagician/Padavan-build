@@ -124,7 +124,7 @@ jobs:
         if: always()
         with:
           name: coredns-dnsredir-packages
-          path: coredns/bin
+          path: /opt/coredns/bin
           
 
 
