@@ -103,13 +103,14 @@ jobs:
       - name: Release build ${{ env.GOOS }}-${{ env.GOARCH }}
         env:
           GOOS: linux
-          GOARCH: arm32
+          GOARCH: arm
+          GOARM: 7
         run: |
           set -eufx
           COREDNS_DIR=/opt/coredns
           pushd $COREDNS_DIR
           make BUILDOPTS="-mod=mod" -j$(nproc)
-          mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH.exe
+          mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH$GOARM.exe
           popd
       - name: Packaging
         run: |
