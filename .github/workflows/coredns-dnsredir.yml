@@ -110,7 +110,7 @@ jobs:
           COREDNS_DIR=/opt/coredns
           pushd $COREDNS_DIR
           make BUILDOPTS="-mod=mod" -j$(nproc)
-          mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH$GOARM.exe
+          mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH$GOARM
           popd
       - name: Packaging
         run: |
