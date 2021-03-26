@@ -1,0 +1,121 @@
+name: coredns-dnsredir build
+
+on:
+  workflow_dispatch:
+    
+
+jobs:
+  build-on-linux:
+    #if: 'false'
+    name: Build on Linux
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.13
+
+      - name: Get dependencies
+        run: |
+          go get -v -t -d ./...
+          if [ -f Gopkg.toml ]; then
+              curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+              dep ensure
+          fi
+
+      - name: Prepare CoreDNS for dnsredir plugin
+        run: |
+          set -eufx
+          whoami
+          nproc
+          uname -v
+
+          DNSREDIR_DIR=dnsredir
+          REPO_ADDR=https://github.com/leiless/dnsredir.git
+          DNSREDIR_TAG=$(curl -sL https://api.github.com/repos/leiless/dnsredir/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
+          git clone --branch $DNSREDIR_TAG --depth 1 $REPO_ADDR $DNSREDIR_DIR 2> /dev/null
+
+          COREDNS_URL=https://github.com/coredns/coredns.git
+          COREDNS_DIR=coredns
+          COREDNS_TAG=$(curl -sL https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
+          git clone --branch $COREDNS_TAG --depth 1 $COREDNS_URL $COREDNS_DIR 2> /dev/null
+
+          mkdir -p ~/go/pkg/mod/github.com/leiless
+          # Link leiless/dnsredir to latest master tree.
+          ln -s $DNSREDIR_DIR ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
+
+          pushd $COREDNS_DIR
+          sed -i "s|forward:forward|dnsredir:$REPO_ADDR\nforward:forward|g" plugin.cfg
+          sed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $REPO_ADDR.pluginVersion=$DNSREDIR_TAG -X $REPO_ADDR.pluginHeadCommit=$HEAD_COMMIT\nGITCOMMIT:=|g" Makefile
+          sed -i 's|$(GITCOMMIT)|$(GITCOMMIT) $(CUSTOM_FLAGS)|g' Makefile
+          go generate coredns.go
+          git diff
+          git status
+          go get
+          popd
+
+      - name: Release build ${{ env.GOOS }}-${{ env.GOARCH }}
+        env:
+          GOOS: linux
+          GOARCH: amd64
+        run: |
+          set -eufx
+          COREDNS_DIR=coredns
+          pushd $COREDNS_DIR
+          make BUILDOPTS="-mod=mod" -j$(nproc)
+          mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
+          popd
+
+      - name: Release build ${{ env.GOOS }}-${{ env.GOARCH }}
+        env:
+          GOOS: linux
+          GOARCH: arm64
+        run: |
+          set -eufx
+          COREDNS_DIR=coredns
+          pushd $COREDNS_DIR
+          make BUILDOPTS="-mod=mod" -j$(nproc)
+          mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
+          popd
+
+      - name: Release build ${{ env.GOOS }}-${{ env.GOARCH }}
+        env:
+          GOOS: windows
+          GOARCH: amd64
+        run: |
+          set -eufx
+          COREDNS_DIR=coredns
+          pushd $COREDNS_DIR
+          make BUILDOPTS="-mod=mod" -j$(nproc)
+          mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH.exe
+          popd
+      - name: Release build ${{ env.GOOS }}-${{ env.GOARCH }}
+        env:
+          GOOS: linux
+          GOARCH: amd32
+        run: |
+          set -eufx
+          COREDNS_DIR=coredns
+          pushd $COREDNS_DIR
+          make BUILDOPTS="-mod=mod" -j$(nproc)
+          mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH.exe
+          popd
+      - name: Packaging
+        run: |
+          set -eufx
+          COREDNS_DIR=coredns
+          pushd $COREDNS_DIR/bin
+          ls -1 | xargs -I{} bash -c "zip -qr9 {}.zip {} && shasum -a 256 {}.zip > {}.zip.shasum256 && rm {}"
+          ls -l
+          popd
+      - name : Upload packages
+        uses: actions/upload-artifact@master
+        if: always()
+        with:
+          name: coredns-dnsredir-packages
+          path: coredns/bin
+          
+
+
+
