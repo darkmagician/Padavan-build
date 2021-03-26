@@ -103,7 +103,7 @@ jobs:
       - name: Release build ${{ env.GOOS }}-${{ env.GOARCH }}
         env:
           GOOS: linux
-          GOARCH: amd32
+          GOARCH: arm32
         run: |
           set -eufx
           COREDNS_DIR=/opt/coredns
