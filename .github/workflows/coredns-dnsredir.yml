@@ -62,6 +62,7 @@ jobs:
           git diff
           git status
           go get
+          mkdir bin
           popd
 
       - name: Release build ${{ env.GOOS }}-${{ env.GOARCH }}
