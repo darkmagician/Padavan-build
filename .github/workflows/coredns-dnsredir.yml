@@ -21,9 +21,10 @@ jobs:
           REPO_ADDR=https://github.com/leiless/dnsredir.git
           DNSREDIR_TAG=$(curl -sL https://api.github.com/repos/leiless/dnsredir/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
           git clone --branch $DNSREDIR_TAG --depth 1 $REPO_ADDR $DNSREDIR_DIR 2> /dev/null
-          cd $DNSREDIR_DIR
       - name: Get dependencies
         run: |
+          DNSREDIR_DIR=/opt/dnsredir
+          cd $DNSREDIR_DIR
           go get -v -t -d ./...
           if [ -f Gopkg.toml ]; then
               curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
@@ -37,7 +38,7 @@ jobs:
           nproc
           uname -v
 
-          DNSREDIR_DIR=$PWD
+          DNSREDIR_DIR=/opt/dnsredir
           REPO_ADDR=https://github.com/leiless/dnsredir.git
           DNSREDIR_TAG=$(curl -sL https://api.github.com/repos/leiless/dnsredir/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
 
